@@ -105,6 +105,29 @@ class Keywords:
         desired_caps["deviceName"] = self.device_name
         self.__current_session = self.create_session(desired_caps, name)
         self.get_sessions()
+        
+    def set_value_table(self, value, using='name', path = '//*', session_id=None):
+        """
+        You should use it before using keyword 'Click Element Text'.
+        Then you can click something you want by text.
+        If current window's name is calculator, and you set value = calculator, 
+        the all text element in caculator will write in value table.
+        It will take additional times to build table.
+        """
+        if session_id is None:
+            session_id = self.get_current_session_id()      
+        self.keylist.clear()
+        self.resultlist.clear() 
+        elem = self.find_element(value=value, using=using, session_id=session_id)
+        elems = self.find_sub_elements_under_parent(elem=elem, value= path, using='xpath', session_id=session_id)
+        self.keylist = [item.get('ELEMENT') for item in elems]
+        self.resultlist = [self.get_text(item, session_id=session_id) for item in self.keylist]
+            
+    def get_value_table_list(self):
+        """
+        Get the list of the value table.
+        """
+        return  self.resultlist
 
     def create_session(self, desired_caps, name):
         res = execute.post(self.path + '/session/', json={'desiredCapabilities': desired_caps})
@@ -249,6 +272,23 @@ class Keywords:
             self.mouse_click(button=way, session_id=session_id)
         else:
             ex = Exception(value + " is not visible")
+            raise ex
+        
+    def click_element_text(self, value, location=0, way='left', session_id=None):
+        """
+        You should use Keyword 'Set Value Table' before use it.
+        Then you can click the text exist on current window.
+        If the area have the same text not only one, 
+        you can set location to click the number of location of the same text elements.(location default value is 0)
+        """
+        if session_id is None:
+            session_id = self.get_current_session_id()
+        indexlist = [i for i,v in enumerate(self.resultlist) if v==value]
+        if self.is_visible(self.keylist[indexlist[location]]):
+            self.move_to_element(elem=self.keylist[indexlist[location]], session_id=session_id)
+            self.mouse_click(button=way, session_id=session_id)
+        else:
+            ex = Exception("The Location " + str(location) + " of "  + value +  + " is not visible")
             raise ex
 
     def get_element_list(self, value, using='name', session_id=None):
