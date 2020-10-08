@@ -263,18 +263,24 @@ class Keywords:
         self.move_to_element(elem=elem, session_id=session_id)
         self.double_click(session_id=session_id)
 
-    def click_element(self, value, using='name', way='left', session_id=None):
+    def click_element(self, value, using='name', way='left', key=None, session_id=None):
         if session_id is None:
             session_id = self.get_current_session_id()
         elem = self.find_element(value=value, using=using, session_id=session_id)
         if self.is_visible(elem):
-            self.move_to_element(elem=elem, session_id=session_id)
-            self.mouse_click(button=way, session_id=session_id)
+            if key is not None:
+                self.key_down(key)
+                self.move_to_element(elem=elem, session_id=session_id)
+                self.mouse_click(button=way, session_id=session_id)
+                self.key_up(key)
+            else:
+                self.move_to_element(elem=elem, session_id=session_id)
+                self.mouse_click(button=way, session_id=session_id)
         else:
             ex = Exception(value + " is not visible")
             raise ex
         
-    def click_element_text(self, value, location=0, way='left', session_id=None):
+    def click_element_text(self, value, location=0, way='left', key=None,session_id=None):
         """
         You should use Keyword 'Set Value Table' before use it.
         Then you can click the text exist on current window.
@@ -285,8 +291,14 @@ class Keywords:
             session_id = self.get_current_session_id()
         indexlist = [i for i,v in enumerate(self.resultlist) if v==value]
         if self.is_visible(self.keylist[indexlist[location]]):
-            self.move_to_element(elem=self.keylist[indexlist[location]], session_id=session_id)
-            self.mouse_click(button=way, session_id=session_id)
+            if key is not None:
+                self.key_down(key)
+                self.move_to_element(elem=self.keylist[indexlist[location]], session_id=session_id)
+                self.mouse_click(button=way, session_id=session_id)
+                self.key_up(key)
+            else:
+                self.move_to_element(elem=self.keylist[indexlist[location]], session_id=session_id)
+                self.mouse_click(button=way, session_id=session_id)
         else:
             ex = Exception("The Location " + str(location) + " of "  + value +  + " is not visible")
             raise ex
@@ -343,18 +355,55 @@ class Keywords:
             session_id = self.get_current_session_id()
         elem = self.find_element(value=value, using=using, session_id=session_id)
         result = self.get_text(elem=elem, session_id=session_id)
-        return result
-    
+        return result		
+		        
+
     def keyboard_keys(self, value, session_id=None):
         if session_id is None:
             session_id = self.get_current_session_id()
         execute.post(self.path + '/session/' + session_id + '/keys', json={'value': list(value)})
-
+        
+    def key_down(self, value, session_id=None):
+        if session_id is None:
+            session_id = self.get_current_session_id()
+        try:
+            key = keys(value)
+        except:
+            key = value.lower()
+        execute.post(self.path + '/session/' + session_id + '/keys', json={'type': "keyDown" ,'value': [key]})
+        
+    def key_up(self, value, session_id=None):
+        if session_id is None:
+            session_id = self.get_current_session_id()
+        try:
+            key = keys(value)
+        except:
+            key = value.lower()
+        execute.post(self.path + '/session/' + session_id + '/keys', json={'type': "keyUp" ,'value': [key]})
+            
     def send_key(self, value, session_id=None):
         if session_id is None:
             session_id = self.get_current_session_id()
-        key = keys(value)
+        try:
+            key = keys(value)
+        except:
+            key = value.lower()
         execute.post(self.path + '/session/' + session_id + '/keys', json={'value': [key]})
+        
+    def send_keys(self, *value):
+        """
+        Example
+        | `Send Keys` |  CONTROL  |  A  | # Pressing "Ctrl" key down, then pressing A and then releasing both keys.  |
+        """
+        key = []
+        for item in value:
+            key.append(item)
+        for i in range(len(key)):
+            if i==0:
+                self.key_down(key[i])
+            else:
+                self.send_key(key[i])
+        self.key_up(key[0])
 
     def enter_value(self, value, locator, using='name', session_id=None):
         if session_id is None:
