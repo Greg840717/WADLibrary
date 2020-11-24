@@ -267,7 +267,7 @@ class Keywords:
         if session_id is None:
             session_id = self.get_current_session_id()
         elem = self.find_element(value=value, using=using, session_id=session_id)
-        if self.is_visible(elem):
+        if self.is_visible(elem, using="element"):
             if key is not None:
                 self.key_down(key)
                 self.move_to_element(elem=elem, session_id=session_id)
@@ -290,7 +290,7 @@ class Keywords:
         if session_id is None:
             session_id = self.get_current_session_id()
         indexlist = [i for i,v in enumerate(self.resultlist) if v==value]
-        if self.is_visible(self.keylist[indexlist[location]]):
+        if self.is_visible(self.keylist[indexlist[location]], using="element"):
             if key is not None:
                 self.key_down(key)
                 self.move_to_element(elem=self.keylist[indexlist[location]], session_id=session_id)
@@ -458,7 +458,10 @@ class Keywords:
         """
         if session_id is None:
             session_id = self.get_current_session_id()
-        elem = self.find_element(locator, using, session_id)
+        if using != "element":
+            elem = self.find_element(locator, using, session_id)
+        else:
+            elem = locator
         res = execute.get(self.path + '/session/' + session_id + '/element/' + elem + '/displayed')
         json_obj = json.loads(res.text)
         result = json_obj['value']
