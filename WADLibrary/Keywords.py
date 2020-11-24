@@ -452,16 +452,32 @@ class Keywords:
         else:
             execute.analyse(res, catch_error=True)
             
-    def is_visible(self, elem, session_id=None):
+    def is_visible(self, locator, using='name', session_id=None):
         """
         If element you can see on the current window, the result will return true. 
         """
         if session_id is None:
             session_id = self.get_current_session_id()
+        elem = self.find_element(locator, using, session_id)
         res = execute.get(self.path + '/session/' + session_id + '/element/' + elem + '/displayed')
         json_obj = json.loads(res.text)
         result = json_obj['value']
         return result
+        
+    def wait_until_element_is_visible(self, locator, using='name', timeout=None, error=None, session_id=None):
+        if timeout is None:
+            timeout = self.timeout
+        def check_visibility():
+            exist = self.is_visible(locator, using, session_id)
+            if exist:
+                return
+            elif exist is None:
+                return error or "Element locator '%s' did not match any elements after %s" % (
+                                locator, self.timeout)
+            else:
+                return error or "Element '%s' was not visible in %s" % (locator, self.timeout)
+                
+        self.wait_until_no_error(int(timeout), check_visibility)
 
     def wait_until_element_is_exist(self, locator, using='name', timeout=None, error=None, session_id=None):
         if timeout is None:
